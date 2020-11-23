@@ -95,9 +95,9 @@ class MiControlador(Motor):
         return pwm_motor
 
 ## Definición de valores de ganancias utilizando método de Ensayo y error. 
-kp = 4.9
+kp = 1.2
 kd = 0
-ki = 0
+ki = 0.35
 
 ## instancia de un controlador
 m = MiControlador(kp, kd, ki)

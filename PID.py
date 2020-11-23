@@ -94,15 +94,17 @@ class MiControlador(Motor):
         ##Salida del controlador
         return pwm_motor
 
+
 ## Definición de valores de ganancias utilizando método de Ensayo y error. 
-kp = 4.9
-kd = 0
-ki = 0
+kp = 2
+kd = 0.03
+ki = 0.1
 
 ## instancia de un controlador
 m = MiControlador(kp, kd, ki)
 ##Correr la simulación
 m.run()
+
 
 ## funciones para graficar. 
 sim_time = np.array(m.t)
@@ -110,10 +112,4 @@ theta = np.array(m.theta_continuos)
 pwm = np.array(m.pwm)
 vel = theta / sim_time
 pos_vel(sim_time, theta, vel, pwm)
-
-
-
-
-
-
 

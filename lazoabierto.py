@@ -28,7 +28,7 @@ class MiControlador(Motor):
         self.max_integral = 400
 
         ## Periodo de simulación
-        self.periodo = 10
+        self.periodo = 15
 
         ##Variable para resetear el integral al cambio de escalón.
         self.switch = True
@@ -40,14 +40,15 @@ class MiControlador(Motor):
     
         ##Control de flujo para simular el cambio en escalón
         if t > 5:
-            ref = self.ref
-            if self.switch:
+            pwm_motor = self.ref
+            """ if self.switch:
                 self.error_acumulado = 0.0
-                self.switch = False
+                self.switch = False """
         else:
-            ref = self.ref_inicial
+            pwm_motor = self.ref_inicial
 
         ##Definición del error
+        ref =0
         error = float(ref - theta)
 
         ## definición para derivativo Kd
@@ -78,8 +79,8 @@ class MiControlador(Motor):
         self.error_anterior = theta
         
         ## Actualización de valor de salida del controlador, PWM con control PID
-        pwm_motor = error * self.kp + derivado * self.kd + integral * self.ki
-
+        #pwm_motor = error * self.kp + derivado * self.kd + integral * self.ki
+        
         ## Actualización de valores para gráficos.
         if t!=0:
             self.t.append(t)
@@ -95,7 +96,7 @@ class MiControlador(Motor):
         return pwm_motor
 
 ## Definición de valores de ganancias utilizando método de Ensayo y error. 
-kp = 4.9
+kp = 0
 kd = 0
 ki = 0
 
