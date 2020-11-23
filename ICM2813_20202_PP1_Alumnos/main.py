@@ -12,77 +12,50 @@ class MiControlador(Motor):
         self.theta = []
         self.pwm = []
         self.theta_continuos = []
-        self.loop = 0
-        
+
+        ## Definición de ganancias 
         self.ref = 90
+        self.ref_inicial = 0
         self.kp = kp
         self.kd = kd
         self.ki = ki
 
+        ## Variables para errores.
         self.error_anterior = 0
         self.delta_tiempo = 0.05
         self.errores_anteriores = []
         self.error_acumulado = 0
+        self.max_integral = 400
 
+        ## Periodo de simulación
         self.periodo = 10
 
+        ##Variable para resetear el integral al cambio de escalón.
         self.switch = True
 
     def control(self, theta, t):
-        '''
-        Esta función es la única que se requiere para poder correr el programa. Si lo desea puede agregar más  
-        funciones a la clase MiControlador. Esta función recibe como entrada (ya calculada) lo siguiente:
-        * theta: Que corresponde al ángulo del motor en radianes (+/-pi)
-        * t: tiempo entre cada vez que se le actualizan los comandos al robot (50 ms)
-        A continuación se presenta un código para mover el motor en forma continua que debe modificar
-        para implementar su controlador PID
-        '''
-   
-        # Definir PWM a aplicar en el motor (voltaje)
-       
-        
-        
-        # Almacenar variables que desee aquí
-        # print("{:.3f},\t{:.2f}".format(t,np.rad2deg(theta)))
 
-        ## Para Graficar, cambio de radianes a angulo continuo. 
-        
-            
-        """ if np.rad2deg(theta) < 0:
-            theta = 360 + np.rad2deg(theta)
-        else:
-            theta = np.rad2deg(theta)
-
-        theta += 360.0*self.loop
-
-        if len(self.theta_continuos) > 1:
-            
-            if (self.theta_continuos[-1] - theta) > 357.0:
-                self.loop += 1
-                theta += 360.0
-            elif (self.theta_continuos[-1] - theta) < -357.0:
-                self.loop -= 1
-                theta -= 360.0 """
-
-
+        ## Transfomar el angulo a grados. 
         theta = np.rad2deg(theta)
-        
-        print("theta:", theta)
-        
+    
+        ##Control de flujo para simular el cambio en escalón
         if t > 5:
             ref = self.ref
             if self.switch:
                 self.error_acumulado = 0.0
                 self.switch = False
         else:
-            ref = 0
+            ref = self.ref_inicial
 
-
+        ##Definición del error
         error = float(ref - theta)
 
+        ## definición para derivativo Kd
         derivado = (error-self.error_anterior)/self.delta_tiempo
+        ## almacenar los derivativos anteriores para filtrar con promedios 
         self.errores_anteriores.append(derivado)
         
+        ## Filtra por promedio de los ultimos 2 valores y actualiza el derivativo.
         suma = 0
         valores_promedio = 3
         if len(self.errores_anteriores) >= valores_promedio:
@@ -90,53 +63,52 @@ class MiControlador(Motor):
                 suma += self.errores_anteriores[-indice]
                
             derivado = suma/valores_promedio
-        print("derivativo:", derivado)
-
-        max_integral = 400
-        if self.error_acumulado > max_integral:
-            integral = max_integral
-        elif self.error_acumulado < -max_integral:
-            integral = -max_integral
+        ## Definición de control Integral
+        ## Maximo valor que almacenará el Ki
+        
+        if self.error_acumulado > self.max_integral:
+            integral = self.max_integral
+        elif self.error_acumulado < - self.max_integral:
+            integral = - self.max_integral
         else: 
             integral = self.error_acumulado
-        print("integral:", integral)
 
+        ## Actualización del error acumulado y el anterior 
         self.error_acumulado += error * self.delta_tiempo
         self.error_anterior = theta
-    
+        
+        ## Actualización de valor de salida del controlador, PWM con control PID
         pwm_motor = error * self.kp + derivado * self.kd + integral * self.ki
 
-        if t!=0: 
+        ## Actualización de valores para gráficos.
+        if t!=0:
             self.t.append(t)
             self.theta.append(np.rad2deg(theta))
             self.theta_continuos.append(theta)
             self.pwm.append(pwm_motor)
-            
-        print("pwm:", pwm_motor)
-        #Detender simulación después de un tiempo
 
+        #Detender simulación después del tiempo de simulación
         if t > self.periodo:
             self.stop()
-
+        
+        ##Salida del controlador
         return pwm_motor
 
-
-
+## Definición de valores de ganancias utilizando método de Ensayo y error. 
 kp = 2
 kd = 0.03
 ki = 0.1
 
+## instancia de un controlador
 m = MiControlador(kp, kd, ki)
+##Correr la simulación
 m.run()
+
+## funciones para graficar. 
 sim_time = np.array(m.t)
-
-continuous_list = m.theta_continuos
-
-delta_continous_list = list(map(lambda x: x - continuous_list[0], continuous_list))
-delta_theta = np.array(delta_continous_list)
-theta = np.array(continuous_list)
+theta = np.array(m.theta_continuos)
 pwm = np.array(m.pwm)
-vel = delta_theta / sim_time
+vel = theta / sim_time
 pos_vel(sim_time, theta, vel, pwm)
 
 
