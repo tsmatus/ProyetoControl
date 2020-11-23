@@ -3,7 +3,7 @@ import numpy as np
 import time
 from grapher import *
 class MiControlador(Motor):
-    def __init__(self, kp):
+    def __init__(self, kp, kd):
         self.stop()        # detener simualción al principio
         super().__init__() # no modificar
         # Las siguientes variables son de ejemplo y puede agregar o eliminar según lo necesite.
@@ -16,10 +16,13 @@ class MiControlador(Motor):
         
         self.ref = 90
         self.kp = kp
+        self.kd = kd
+
+        self.valor_anterior = 0
+        self.delta_tiempo = 0.05
+        self.valores_anteriores = []
 
         self.periodo = 10
-        
-        
 
     def control(self, theta, t):
         '''
@@ -41,7 +44,7 @@ class MiControlador(Motor):
         ## Para Graficar, cambio de radianes a angulo continuo. 
         
             
-        if np.rad2deg(theta) < 0:
+        """ if np.rad2deg(theta) < 0:
             theta = 360 + np.rad2deg(theta)
         else:
             theta = np.rad2deg(theta)
@@ -50,23 +53,38 @@ class MiControlador(Motor):
 
         if len(self.theta_continuos) > 1:
             
-            if (self.theta_continuos[-1] - theta) > 350.0:
+            if (self.theta_continuos[-1] - theta) > 358.0:
                 self.loop += 1
                 theta += 360.0
-            elif (self.theta_continuos[-1] - theta) < -350.0:
+            elif (self.theta_continuos[-1] - theta) < -358.0:
                 self.loop -= 1
-                theta -= 360.0
+                theta -= 360.0 """
 
-    
+        theta = np.rad2deg(theta)
         print("theta:", theta)
         
         if t > 5:
             ref = self.ref
         else:
-            ref = 360
+            ref = 0
 
         error = ref - theta
-        pwm_motor = error * self.kp 
+
+        derivado = (theta-self.valor_anterior)/self.delta_tiempo
+        self.valores_anteriores.append(derivado)
+        suma = 0
+        valores_promedio = 6
+        if len(self.valores_anteriores) >= valores_promedio:
+            for indice in range(-1, -valores_promedio):
+                suma += self.valores_anteriores[indice]
+            derivado = suma/valores_promedio
+        
+        
+
+        self.valor_anterior = theta
+    
+        pwm_motor = error * self.kp + derivado * self.kd 
+
         if t!=0: 
             self.t.append(t)
             self.theta.append(np.rad2deg(theta))
@@ -75,6 +93,7 @@ class MiControlador(Motor):
             
         print("pwm:", pwm_motor)
         #Detender simulación después de un tiempo
+
         if t > self.periodo:
             self.stop()
 
@@ -82,8 +101,10 @@ class MiControlador(Motor):
 
 
 
-kp = 2
-m = MiControlador(kp)
+kp = 6
+kd = 0.2
+
+m = MiControlador(kp, kd)
 m.run()
 sim_time = np.array(m.t)
 
