@@ -24,8 +24,7 @@ def DCMotor(t, x, u):
     # u[0] -> voltaje
     # u[1] -> T_load
 
-    return np.array([ -Ra/La * x[0]  - Kt/La * x[1] + 1/La * u[0] ,
-                     Kt/Jeq * x[0] - B/Jeq * x[1] - 1/Jeq*u[1]])           
+    return np.array([ -Ra/La * x[0]  - Kt/La * x[1] + 1/La * u[0] ,                     Kt/Jeq * x[0] - B/Jeq * x[1] - 1/Jeq*u[1]])           
                     
 def Y(x):
 

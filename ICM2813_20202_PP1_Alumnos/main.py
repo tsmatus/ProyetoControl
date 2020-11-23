@@ -3,7 +3,7 @@ import numpy as np
 import time
 from grapher import *
 class MiControlador(Motor):
-    def __init__(self, kp, kd):
+    def __init__(self, kp, kd, ki):
         self.stop()        # detener simualción al principio
         super().__init__() # no modificar
         # Las siguientes variables son de ejemplo y puede agregar o eliminar según lo necesite.
@@ -17,12 +17,16 @@ class MiControlador(Motor):
         self.ref = 90
         self.kp = kp
         self.kd = kd
+        self.ki = ki
 
-        self.valor_anterior = 0
+        self.error_anterior = 0
         self.delta_tiempo = 0.05
-        self.valores_anteriores = []
+        self.errores_anteriores = []
+        self.error_acumulado = 0
 
         self.periodo = 10
+
+        self.switch = True
 
     def control(self, theta, t):
         '''
@@ -53,37 +57,54 @@ class MiControlador(Motor):
 
         if len(self.theta_continuos) > 1:
             
-            if (self.theta_continuos[-1] - theta) > 358.0:
+            if (self.theta_continuos[-1] - theta) > 357.0:
                 self.loop += 1
                 theta += 360.0
-            elif (self.theta_continuos[-1] - theta) < -358.0:
+            elif (self.theta_continuos[-1] - theta) < -357.0:
                 self.loop -= 1
                 theta -= 360.0 """
 
+
         theta = np.rad2deg(theta)
+        
         print("theta:", theta)
         
         if t > 5:
             ref = self.ref
+            if self.switch:
+                self.error_acumulado = 0.0
+                self.switch = False
         else:
             ref = 0
 
-        error = ref - theta
 
-        derivado = (theta-self.valor_anterior)/self.delta_tiempo
-        self.valores_anteriores.append(derivado)
+        error = float(ref - theta)
+
+        derivado = (error-self.error_anterior)/self.delta_tiempo
+        self.errores_anteriores.append(derivado)
+        
         suma = 0
-        valores_promedio = 6
-        if len(self.valores_anteriores) >= valores_promedio:
-            for indice in range(-1, -valores_promedio):
-                suma += self.valores_anteriores[indice]
+        valores_promedio = 3
+        if len(self.errores_anteriores) >= valores_promedio:
+            for indice in range(1, valores_promedio):
+                suma += self.errores_anteriores[-indice]
+               
             derivado = suma/valores_promedio
-        
-        
+        print("derivativo:", derivado)
 
-        self.valor_anterior = theta
+        max_integral = 400
+        if self.error_acumulado > max_integral:
+            integral = max_integral
+        elif self.error_acumulado < -max_integral:
+            integral = -max_integral
+        else: 
+            integral = self.error_acumulado
+        print("integral:", integral)
+
+        self.error_acumulado += error * self.delta_tiempo
+        self.error_anterior = theta
     
-        pwm_motor = error * self.kp + derivado * self.kd 
+        pwm_motor = error * self.kp + derivado * self.kd + integral * self.ki
 
         if t!=0: 
             self.t.append(t)
@@ -101,10 +122,11 @@ class MiControlador(Motor):
 
 
 
-kp = 6
-kd = 0.2
+kp = 2
+kd = 0.03
+ki = 0.1
 
-m = MiControlador(kp, kd)
+m = MiControlador(kp, kd, ki)
 m.run()
 sim_time = np.array(m.t)
 
